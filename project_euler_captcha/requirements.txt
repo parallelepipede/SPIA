@@ -1,0 +1,6 @@
+captcha
+opencv-python
+tensorflow
+selenium
+pytorch
+requests
