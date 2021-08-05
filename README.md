@@ -21,3 +21,4 @@ Automatically sign in to your Project_euler account, reading and filling the cap
 * `Navier-Stokes` - Solve Navier-Stokes equations. Optical neural network.
 * `Gentle chatbot` - Virtual chatbot. Natural Language Understanding.
 * `Project euler captcha` - Automatically Sign in to your Project Euler account. Image classification.
+* `Reinforce your Learning` - Reinforcement learning problems principally on gym open-source library.
