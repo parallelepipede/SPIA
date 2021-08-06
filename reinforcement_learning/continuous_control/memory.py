@@ -11,8 +11,8 @@ from collections import deque
 
 class ReplayBuffer:
     def __init__(self,buffer_size,batch_size):
-        self.buffer_size = buffer_size
-        self.replay_buffer = deque(maxlen=buffer_size)
+        self.buffer_size = int(buffer_size)
+        self.replay_buffer = deque(maxlen=self.buffer_size)
         self.batch_size = batch_size
         
     def append(self,state,action,reward,next_state):

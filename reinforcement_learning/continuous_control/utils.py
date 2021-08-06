@@ -10,6 +10,9 @@ import datetime
 import os
 import tensorflow as tf
 
+#https://www.tensorflow.org/install/source#macos_1 For optimal performances on MacOS or GPU.
+#This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+
 
 class Tensorboard:
     #https://www.tensorflow.org/tensorboard/migrate

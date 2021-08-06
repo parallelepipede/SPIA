@@ -9,11 +9,16 @@ Created on Mon Aug  2 00:03:39 2021
 # continuous paper : https://arxiv.org/pdf/1509.02971.pdf
 
 import os
+import logging
+from memory import ReplayBuffer
+from noise import GaussianNoise,AdaptativeNoise,OrnsteinUhlenbeckActionNoise
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import optimizers,Input, Model
 from tensorflow.keras.layers import Dense, BatchNormalization, Conv2D,Add
-from memory import ReplayBuffer
+
+
+
 
 # Need a replay buffer class
 # Need a class for target Q networks (function of s and a)
@@ -70,13 +75,17 @@ def update_target_network(model_target,model_ref,rho):
 
 class Actor:
     
-    def __init__(self,batch_size=64):
+    def __init__(self,batch_size=64,lr = 1e-3):
         self.batch_size = batch_size
+        self.lr = lr
+        self.optimizer = optimizers.Adam(self.lr)
         self.kernel_initializer=tf.random_uniform_initializer(minval=-3e-3,maxval=3e-3)
         self.initializer = tf.keras.initializers.VarianceScaling(scale=0.1, mode='fan_in', distribution='uniform')
         
     def build_network(self,n_states,n_actions,action_high):
-        inputs = Input(shape = (n_states,),batch_size = self.batch_size)
+        inputs = Input(shape = n_states,batch_size = self.batch_size)
+        print("inputs size : ", inputs.shape)
+        
         x = Dense(400,activation = tf.nn.relu,kernel_initializer = self.initializer, name = "actor_f1")(inputs)  #kernel_initializer = self.initializer
         x = Dense(300,activation = tf.nn.relu,kernel_initializer = self.initializer, name = "actor_f2")(x) #kernel_initializer = self.initializer,
         outputs = Dense(n_actions,activation = "tanh",kernel_initializer=self.kernel_initializer)(x) * action_high
@@ -85,14 +94,16 @@ class Actor:
         return self.model
         
 class Critic:
-    def __init__(self,batch_size=64):
+    def __init__(self,batch_size=64,lr = 1e-4):
         self.batch_size = batch_size
+        self.lr = lr
         self.kernel_initializer=tf.random_uniform_initializer(minval=-3e-4,maxval=3e-4)
         self.initializer = tf.keras.initializers.VarianceScaling(scale=0.1, mode='fan_in', distribution='uniform')
+        self.optimizer = optimizers.Adam(self.lr) #amsgrad = True
         
     def build_network(self,n_states,n_actions,action_high):
         #include states
-        state_inputs = Input(shape = (n_states,),batch_size = self.batch_size)
+        state_inputs = Input(shape = n_states,batch_size = self.batch_size)
         x = Dense(400,activation = tf.nn.relu,kernel_initializer = self.initializer, name = "critic_f1")(state_inputs)
         x = BatchNormalization()(x)
         state_outputs = Dense(300,activation = tf.nn.relu,kernel_initializer = self.initializer, name = "critic_f2")(x)
@@ -107,7 +118,7 @@ class Critic:
         
         x = tf.keras.layers.Dense(150, activation=tf.nn.relu,kernel_initializer = self.initializer,name="critic_f4")(added_layer)
         x = tf.keras.layers.BatchNormalization()(x)
-        outputs = tf.keras.layers.Dense(1, kernel_initializer=self.kerner_initializer,name="critic_f5")(x)
+        outputs = tf.keras.layers.Dense(1, kernel_initializer=self.kernel_initializer,name="critic_f5")(x)
         
         self.model = tf.keras.Model([state_inputs, action_inputs], outputs)
         return self.model
@@ -118,13 +129,70 @@ class Agent(object):
     def __init__(self, n_states, n_actions, action_high, action_low, gamma=.99, rho=.001,std_dev=.2):
         self.actor = Actor().build_network(n_states,n_actions,action_high)
         self.critic = Critic().build_network(n_states,n_actions,action_high)
+        self.critic_target = Critic().build_network(n_states,n_actions,action_high)
+        self.action_target = Actor().build_network(n_states,n_actions,action_high)
         self.replay_buffer = ReplayBuffer(buffer_size = 1e6,batch_size = 64)
+        self.noise = OrnsteinUhlenbeckActionNoise(mu = np.zeros(n_actions))
+        self.action_high = action_high
+        self.action_low = action_low
+        self.rho = rho
+        self.gamma = gamma
+        
         
     def action(self,state):
-        self.actor
+        #logging.info(self.actor(tf.expand_dims(state,0)))
+        #print(tf.expand_dims(state,0), self.actor(tf.expand_dims(state,0))[0])
+        
+        return np.clip(self.actor(tf.expand_dims(state,0))[0].numpy(),self.action_low,self.action_high)
         
     def remember(self,state,reward,action,next_state):
         self.replay_buffer.append(state,reward,action,next_state)
+    
+    def update_model(self,state,action,reward,next_state):
+        with tf.GradientTape() as tape:
+            yi  = reward + self.gamma*self.critic_target([next_state,self.actor_target(next_state)])
+            L = tf.math.reduce_mean(tf.math.square(yi - self.critic([state,action])))  # critic_loss
+        critic_grad = tape.gradients(L, self.critic.trainable_variables)
+        self.critic.optimizer.apply_gradients(zip(critic_grad,self.critic.trainable_variables))
+        
+        with tf.GradientTape() as tape : 
+            action_loss = -tf.math.reduce_mean(self.critic([state,self.actor(state)]))   #Negative Gradient because ascient version of gradient is needed 
+        
+        actor_grad = tape.gradients(action_loss,self.actor.trainable_vairables)
+        self.actor.optimizer.apply_gradients(zip(actor_grad,self.actor.trainable_variables))
+        
+        return L, action_loss
+        
+    
+    def learn(self):
+        print(self.replay_buffer.replay_buffer)
+        print(self.replay_buffer.get_batch(), " batch")
+        
+        #TODO fill this line with update model for actor and critic
+        update_target_network(self.actor_target,self.actor,self.rho)
+        update_target_network(self.critic_target,self.critic,self.rho)
+    
+    def save_weight(self,path):
+        if not os.path.exists(path):
+            os.mkdir(path)
+        
+        self.actor.save_weights(path + "an.h5")
+        self.critic.save_weights(path + "cn.h5")
+        self.critic_target.save_weights(path + "ct.h5")
+        self.actor_target.save_weights(path + "at.h5")
+        
+    
+   
+        
+    def load_weight(self,path):
+        try : 
+            self.actor.load_weights(path + "an.h5")
+            self.critic.load_weights(path + "cn.h5")
+            self.critic_target.load_weights(path + "ct.h5")
+            self.actor_target.load_weights(path + "at.h5")
+            
+        except Exception as e : 
+            print(e)
         
         
         

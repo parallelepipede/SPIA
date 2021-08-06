@@ -11,6 +11,8 @@ gym.logger.set_level(40) # Block warning
 import numpy as np
 from models import Agent
 import sys
+from utils import Tensorboard
+import tensorflow as tf
 
 if __name__ == "__main__":
     env = gym.make('BipedalWalker-v3')
@@ -24,17 +26,33 @@ if __name__ == "__main__":
     
     agent = Agent(env.observation_space.shape[0],env.action_space.shape[0],action_space_high,action_space_low)
     #agent.reset()
-    sys.exit(0)
+    tensorboard = Tensorboard("models")
     score_history = []
+    acc_reward = tf.keras.metrics.Sum('reward', dtype=tf.float32)
+    actions_squared = tf.keras.metrics.Mean('actions', dtype=tf.float32)
+    #loss_c = tf.keras.metrics.Mean('loss_c', dtype=tf.float32)
+    loss_c = tf.keras.metrics.MeanSquaredError('loss_c', dtype=tf.float32)
+    #loss_a = tf.keras.metrics.Mean('loss_a', dtype=tf.float32)
+    loss_a = tf.keras.metrics.MeanSquaredError('loss_a', dtype=tf.float32)
     for episode in range(10):
         observation = env.reset()
+        agent.noise.reset()
         done = False
         score = 0
-        while not done :
-            
-            #action = agent.action(observation)
-            action = env.action_space.sample()
+        for _ in range(100):
+            env.render()
+            action = agent.action(observation)
+            #action = env.action_space.sample()
             new_observation, reward, done, info = env.step(action)
+            agent.remember(new_observation,reward,action,observation)
+            agent.learn()
+            print("bein",
+                  new_observation)
+            print(reward)
+            print(done)
+            print(info)
+            print(observation, " observation")
+            sys.exit(0)
             #agent.remember(observation,action,new_observation,done)
             #agent.learn()
             
@@ -47,12 +65,19 @@ if __name__ == "__main__":
                       done : {done}
                       info : {info}
                 """)
+            if done : 
+                break
         score_history.append(score)
         print(f"""
                   Épisode :{episode}
                   Score : {score}
                   Avg Score over 10 last episodes : {np.mean(score_history[-10:])}
               """)
+        observation = env.reset()
+        acc_reward.reset_states()
+        actions_squared.reset_states()
+        loss_c.reset_states()
+        loss_a.reset_states()
     #agent.save_models()
     
             

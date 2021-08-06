@@ -33,7 +33,7 @@ class OrnsteinUhlenbeckActionNoise(object):
 
     
 class GaussianNoise(object):
-    #TODO reduce the scale of the noise over the course of training. 
+    
     def __init__(self,mu,sigma):
         self.mu = mu
         self.sigma = sigma
@@ -46,3 +46,27 @@ class GaussianNoise(object):
     
     def __call__(self):
         return np.random.normal(self.mu,self.sigma)
+    
+    
+class AdaptativeNoise(object):
+    #TODO reduce the scale of the noise over the course of training. To test : reduction and augmentation of both parameters
+    def __init__(self,mu,sigma,change_threshold,adjustment_coefficient):
+        self.mu = mu
+        self.sigma = sigma
+        self.change_threshold = change_threshold
+        
+    
+    def adapt(self,n_steps):
+        if n_steps > self.change_threshold:
+            self.mu /= self.adjustment_coefficient
+        else:
+            self.mu *= self.adjustment_coefficient
+        
+    def __call__(self):
+        return np.random.normal(self.mu,self.sigma)
+    
+    
+    
+    
+    
+    
