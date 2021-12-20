@@ -24,6 +24,14 @@ class BasicPlayer:
     pass
 
 
+class Table:
+    pass
+
+
+class Gamestate:
+    pass
+
+
 class Card:
     def __init__(self, color: Color, rank: Rank) -> None:
         """
@@ -274,6 +282,14 @@ class BasicPlayer:
         """
         pass
 
+    def play_this_card(self, trick: Trick, card: Card):
+        trick.add(card)
+        self.hand.cards.remove(card)
+
+    def take_this_color(self, trump: Color, state: Gamestate) -> None:
+        state.atout = trump
+        state.preneur = self
+
 
 class SimpleBotPlayer(BasicPlayer):
     def take(self, topcard: Card, second_turn: bool = False) -> Optional[Color]:
@@ -377,3 +393,140 @@ class Team:
     def __str__(self) -> str:
         return ("{ name: " + str(self.name) + ", players: " + list_str(self.players)
                 + ", score: " + str(self.score) + "}")
+
+
+class Table:
+    def __init__(self, players: List[BasicPlayer], deck: Deck) -> None:
+        self.players = players
+        self.teams = [Team("Team NS", [players[0], players[2]]), Team("Team EO", [players[1], players[3]])]
+        self.deck = deck
+        self.past_tricks = []
+        self.trick = None
+
+    def __str__(self) -> str:
+        return ("{ players: " + list_str(self.players) + ", \n"  # trick: " + str(self.trick) +
+                                                         ", \ndeck: " + str(self.deck) + "}")
+
+
+class Gamestate:
+    def __init__(self, table: Table, first_taker: BasicPlayer) -> None:
+        self.table = table
+        self.ply = 0
+        self.first_player = first_taker
+        self.current_player = first_taker
+        self.first_taker = first_taker
+        self.atout: Optional[Color] = None
+        self.preneur: Optional[BasicPlayer] = None
+        self.taking_turn = 1
+
+    @property
+    def iter_players(self) -> List[BasicPlayer]:
+        first_taker_index = self.table.players.index(self.first_taker)
+        return list_rotate(self.table.players, first_taker_index)
+
+    def __str__(self) -> str:
+        return ("{ table: " + str(self.table)
+                + ", \nfirst player: " + str(self.first_player.name)
+                + ", \natout: " + str(self.atout)
+                + ", \npreneur: " + (str(self.preneur.name) if self.preneur else "None") + "}")
+
+    def mcts_get_legal_actions(self):
+        for player in self.iter_players:
+            print(len(player.hand.cards))
+        if self.atout:
+            legal_moves = self.table.trick.get_legal_moves(self.current_player.hand, self.atout)
+        else:
+            if self.taking_turn == 1:
+                legal_moves = [self.table.deck.topcard.color, None]
+            elif self.taking_turn == 2:
+                legal_moves = [color for color in Color if color != self.table.deck.topcard.color] + [None]
+            else:
+                raise Exception("taking_turn value error.")
+        return legal_moves
+
+    def mcts_move(self, action):
+        # if the trump is defined, we play a trick
+        if self.atout:
+            # the current player has to play a card
+            self.current_player.play_this_card(self.table.trick, action)
+            # if its not the last card of the trick, the next player will play
+            if len(self.table.trick.cards) < 4:
+                self.current_player = self.table.players[(self.table.players.index(self.current_player) + 1) % 4]
+            # it's the last card of the trick
+            elif len(self.table.trick.cards) == 4:
+                # finding who will be the next first player (the player who won the trick)
+                play_order = list_rotate(self.table.players, self.table.players.index(self.first_player))
+                self.first_player = play_order[self.table.trick.get_winner(self.atout)]
+                # adding the points of the trick to the corresponding team
+                if self.table.teams[0].name == self.first_player.team:
+                    self.table.teams[0].score += self.table.trick.get_points(self.atout) + 10 * (self.ply == 7)
+                else:
+                    self.table.teams[1].score += self.table.trick.get_points(self.atout) + 10 * (self.ply == 7)
+                # adding the finished trick to the list of past tricks
+                self.table.past_tricks.append(self.table.trick)
+                # going for the next ply
+                self.ply += 1
+                print(self.ply)
+                self.table.trick = Trick(self.first_player)
+                # the current player is the first player of the trick
+                self.current_player = self.first_player
+            return self
+        else:
+            # if we are during the first turn
+            if self.taking_turn == 1:
+                # if the player doesn't want to take
+                if action is None:
+                    # we pass to the next player
+                    self.current_player = self.table.players[(self.table.players.index(self.current_player) + 1) % 4]
+                    # if the next player is the first one, then we are at the second turn
+                    if self.current_player == self.first_taker:
+                        self.taking_turn = 2
+                    return self
+                else:
+                    # here the player wants to take
+                    self.current_player.take_this_color(action, self)
+                    self.current_player.hand.add(self.table.deck.topcard)
+                    self.taking_turn = None
+                    # drawing the cards
+                    for player in self.iter_players:
+                        n_cards = 2 if player is self.preneur else 3
+                        for j in range(n_cards):
+                            player.draw(self.table.deck)
+                    # setting the first player of the first ply
+                    self.current_player = self.first_taker
+                    # creating the ply accordingly
+                    self.table.trick = Trick(self.current_player)
+                    return self
+            # we are at the second turn
+            elif self.taking_turn == 2:
+                if action is None:
+                    # we pass to the next player
+                    self.current_player = self.table.players[(self.table.players.index(self.current_player) + 1) % 4]
+                    # if the next player is the first one, then we scrap the game
+                    print("END OF THE GAME")
+                    raise Exception("This is the end of the game because no one took.")
+                else:
+                    # here the player wants to take
+                    self.current_player.take_this_color(action, self)
+                    self.current_player.hand.add(self.table.deck.topcard)
+                    self.taking_turn = None
+                    # drawing the cards
+                    for player in self.iter_players:
+                        n_cards = 2 if player is self.preneur else 3
+                        for j in range(n_cards):
+                            player.draw(self.table.deck)
+                    # setting the first player of the first ply
+                    self.current_player = self.first_taker
+                    # creating the ply accordingly
+                    self.table.trick = Trick(self.current_player)
+                    return self
+            else:
+                raise Exception("Error as there is no trump and the game isn't during a taking turn.")
+
+    def is_game_over(self) -> bool:
+        return self.ply == 8
+
+    def game_result(self):
+        if self.table.teams[0].score > self.table.teams[0].score:
+            return 1
+        return -1
