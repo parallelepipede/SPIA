@@ -2,7 +2,7 @@ import collections
 from enum import Enum, unique
 from typing import List, Optional
 from copy import deepcopy
-from utils import *
+from src.utils import *
 import random
 
 color_to_symbol = {
@@ -362,14 +362,11 @@ class HumanPlayer(BasicPlayer):
         if second_turn:
             print("Do you want to take ? ({}, None)".format(
                 ", ".join([color.name for color in Color if color != topcard.color])))
-            inp = input().split()
-            while len(inp) == 0 : 
-                print("Please enter a valid value : {}, None)".format(
-                ", ".join([color.name for color in Color if color != topcard.color])))
-                inp = input().split()
-            inp = inp[0]
+            inp = input("")
             print("*" * 100)
             print("*" * 100)
+            if inp.upper() == "None":
+                return None
             if inp.upper() == "HEARTS" and topcard.color != Color.HEARTS:
                 return Color.HEARTS
             if inp.upper() == "SPADES" and topcard.color != Color.SPADES:
@@ -380,7 +377,7 @@ class HumanPlayer(BasicPlayer):
                 return Color.CLUBS
         else:
             print("This is the color  : {}".format(topcard.color.name))
-            inp = input("Do you want to take ? (y/n) ").split()[0]
+            inp = input("Do you want to take ? (y/n)")
             print("*" * 100)
             print("*" * 100)
             if inp == "y":
@@ -402,14 +399,7 @@ class HumanPlayer(BasicPlayer):
         print("*" * 100)
         print("*" * 100)
         inp = input("Enter your move :")
-        try :
-            inp = int(inp)
-        except ValueError : 
-            if len(self.hand.cards) == 0 : 
-                print("Please enter number 0")
-            else:
-                print("Please enter a number between 0 and", len(self.hand.cards))
-        card = legal_moves[inp]
+        card = legal_moves[int(inp)]
         self.hand.cards.remove(card)
         trick.add(card)
 
