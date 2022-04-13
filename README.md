@@ -13,12 +13,13 @@ Automatically sign in to your Project_euler account, reading and filling the cap
 ## List of AIdeas 
 
 
+* `Driving license` - Draw any road on screen, self-taught cars ride it. Reinforcement learning.
+* `Geoguessr perfection` - Predict geographical location based on image. Image classification and feature extraction.
+* `Gentle chatbot` - Virtual chatbot. Natural Language Understanding.
 * `Meteo` - Weather predictions : 
   *  `Cloud prediction` - Predict nature of clouds based on images. Classic image classification.
   *  `Surfing waves` - Predict for a specific spot, surfing conditions. Machine Learning models.
-* `Geoguessr perfection` - Predict geographical location based on image. Image classification and feature extraction.
-* `Driving license` - Draw any road on screen, self-taught cars ride it. Reinforcement learning.
 * `Navier-Stokes` - Solve Navier-Stokes equations. Optical neural network.
-* `Gentle chatbot` - Virtual chatbot. Natural Language Understanding.
 * `Project euler captcha` - Automatically Sign in to your Project Euler account. Image classification.
 * `Reinforce your Learning` - Reinforcement learning problems principally on gym open-source library.
+* `Semantris` - Automate Semantris game
