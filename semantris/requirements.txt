@@ -1,0 +1,9 @@
+matplotlib
+numpy
+pickle
+pyautogui
+pyperclip
+pytesseract
+scikit-learn
+tensorflow
+tqdm
