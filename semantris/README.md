@@ -29,6 +29,8 @@
 
 `Semantris` project consists of an autonomous bot playing Google game `Semantris` mixing semantics and Tetris.
 
+![animated demo screenshot](images/demo.gif)
+
 Start a new game and let Machine Learning play for you. Compare the result with your best own high scores.
 
 Semantris game provides a stack of various words. One of them is the target. The player enters a word as close as possible to the target. Then words in the stack are ordered based on semantics association.<br>
