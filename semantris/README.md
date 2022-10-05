@@ -31,7 +31,7 @@
 
 ![animated demo screenshot](images/demo.gif)
 
-Start a new game and let Machine Learning play for you. Compare the result with your best own high scores.
+Start a new game and let Machine Learning play for you. Compare the result with your best own high scores. Bot's highest score is 3065 up to now. Updates are coming soon !
 
 Semantris game provides a stack of various words. One of them is the target. The player enters a word as close as possible to the target. Then words in the stack are ordered based on semantics association.<br>
 
