@@ -29,7 +29,7 @@
 
 `Semantris` project consists of an autonomous bot playing Google game `Semantris` mixing semantics and Tetris.
 
-![animated demo screenshot](https://github.com/parallelepipede/SPIA/tree/main/semantris/images/demo.gif)
+![animated demo screenshot](images/demo.gif)
 
 Start a new game and let Machine Learning play for you. Compare the result with your best own high scores.
 
