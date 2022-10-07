@@ -6,10 +6,6 @@ Miscellaneous AI projects built by Simon and Paul.
 
 SPIA is a list of innovative AI solutions.
 
-## Project_euler_captcha
-
-Automatically sign in to your Project_euler account, reading and filling the captcha. 
-
 ## List of AIdeas 
 
 
@@ -23,3 +19,8 @@ Automatically sign in to your Project_euler account, reading and filling the cap
 * `Project euler captcha` - Automatically Sign in to your Project Euler account. Image classification.
 * `Reinforce your Learning` - Reinforcement learning problems principally on gym open-source library.
 * `Semantris` - Automate Semantris game
+
+<br>
+Animation of Github authors' picture using Stable diffusion v1.4
+
+![Stable Diffusion animation](assets/SPExplosion.gif)
